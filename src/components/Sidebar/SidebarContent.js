@@ -3,6 +3,8 @@ import routes from "../../routes/sidebar";
 import { NavLink, Route } from "react-router-dom";
 import * as Icons from "../../icons";
 import SidebarSubmenu from "./SidebarSubmenu";
+import Logo from '../../assets/img/PA-Logos.png';
+
 import { Button } from "@windmill/react-ui";
 
 function Icon({ icon, ...props }) {
@@ -13,12 +15,17 @@ function Icon({ icon, ...props }) {
 function SidebarContent() {
   return (
     <div className="py-4 text-gray-500 dark:text-gray-400">
-      <a
-        className="ml-6 text-lg font-bold text-gray-800 dark:text-gray-200"
-        href="#"
-      >
-        E-Commerce
-      </a>
+      {/* Logo and PA Gebeya Link */}
+      <div className="flex items-center ml-6">
+        <img src={Logo} alt="PA Logo" className="w-10 h-10 mr-3" />
+        <a
+          className="text-lg font-bold text-gray-800 dark:text-gray-200"
+          href="#"
+        >
+          PA Gebeya
+        </a>
+      </div>
+
       <ul className="mt-6">
         {routes.slice(0, -3).map((route) =>
           route.routes ? (
@@ -73,7 +80,7 @@ function SidebarContent() {
 
       <div className="px-6 my-6">
         <Button>
-          Genarate Report
+          Generate Report
           <span className="ml-2" aria-hidden="true">
             +
           </span>
