@@ -17,6 +17,26 @@ const routes = [
     name: "Orders",
   },
   {
+    icon: "CategoryIcon",
+    name: "Category",
+    routes: [
+      {
+        path: "/app/all-categories",
+        name: "All Categories",
+      },
+      {
+        path: "/app/categories",
+        name: "Add Category",
+      },
+          {
+            path: "/app/SubCategories",
+            name: "Add Subcategory",
+          },
+        ],
+      },
+    
+  
+  {
     icon: "TruckIcon",
     name: "Products",
     routes: [

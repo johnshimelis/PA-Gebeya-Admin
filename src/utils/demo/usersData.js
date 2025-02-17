@@ -1,5 +1,6 @@
 export default [
   {
+    id: 1,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Chandler",
     last_name: "Jacobi",
@@ -11,24 +12,25 @@ export default [
       { flag: "to_client", text: "Hello sir, How can I help you" },
       {
         flag: "from_client",
-        text: "I need to know the price of New Nike Shoues",
+        text: "I need to know the price of New Nike Shoes",
       },
       {
         flag: "to_client",
-        text: "Newset Nike one will be $199.00 sir",
+        text: "Newest Nike one will be $199.00 sir",
       },
       {
         flag: "from_client",
-        text: "Okay, Do you deliver it my home after purchase..?",
+        text: "Okay, Do you deliver it to my home after purchase..?",
       },
       {
         flag: "to_client",
         text:
-          "Yes sir, But it may take at least 1 Day... Are you okay with that time..?",
+          "Yes sir, But it may take at least 1 day... Are you okay with that time..?",
       },
     ],
   },
   {
+    id: 2,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Harry",
     last_name: "Peter",
@@ -40,11 +42,12 @@ export default [
       { flag: "to_client", text: "Hello sir, How can I help you" },
       {
         flag: "from_client",
-        text: "I need to buy latest revealed Apple Watch",
+        text: "I need to buy the latest revealed Apple Watch",
       },
     ],
   },
   {
+    id: 3,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Judith",
     last_name: "Espanaso",
@@ -54,6 +57,7 @@ export default [
     messages: [{ flag: "from_client", text: "Hello..," }],
   },
   {
+    id: 4,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Jason",
     last_name: "Mike",
@@ -65,11 +69,12 @@ export default [
       { flag: "to_client", text: "Hello sir, How can I help you" },
       {
         flag: "from_client",
-        text: "I need to know the price of New Addidas Shoues",
+        text: "I need to know the price of New Adidas Shoes",
       },
     ],
   },
   {
+    id: 5,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Smith",
     last_name: "Shane",
@@ -79,6 +84,7 @@ export default [
     messages: null,
   },
   {
+    id: 6,
     avatar: "https://i.pravatar.cc/300",
     first_name: "Adam",
     last_name: "Joe",
@@ -90,15 +96,16 @@ export default [
       { flag: "to_client", text: "Hello sir, How can I help you" },
       {
         flag: "from_client",
-        text: "I need to know the price of New Addidas Shoues",
+        text: "I need to know the price of New Adidas Shoes",
       },
     ],
   },
   {
+    id: 7,
     avatar: "https://i.pravatar.cc/300",
-    first_name: "Josheph ",
-    last_name: "churchille",
-    email: "joe.churchile@test.net",
+    first_name: "Josheph",
+    last_name: "Churchille",
+    email: "joe.churchille@test.net",
     joined_on: "Mon Feb 03 2020 04:13:15 GMT-0300 (Brasilia Standard Time)",
     state: false,
     messages: null,

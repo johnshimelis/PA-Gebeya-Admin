@@ -16,7 +16,7 @@ const Customers = () => {
     <div>
       <PageTitle>Manage Customers</PageTitle>
 
-      <div className="grid gap-6 mb-8 md:grid-cols-2">
+      {/* <div className="grid gap-6 mb-8 md:grid-cols-2">
         <ChartCard title="User Details">
           <Line {...lineOptions} />
           <ChartLegend legends={lineLegends} />
@@ -26,7 +26,7 @@ const Customers = () => {
           <Bar {...realTimeUsersBarOptions} />
           <ChartLegend legends={realTimeUsersBarLegends} />
         </ChartCard>
-      </div>
+      </div> */}
 
       <UsersTable resultsPerPage={10} />
     </div>

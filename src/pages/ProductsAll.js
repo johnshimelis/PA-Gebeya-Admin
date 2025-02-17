@@ -35,6 +35,9 @@ import Icon from "../components/Icon";
 import { genRating } from "../utils/genarateRating";
 
 const ProductsAll = () => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [selectedEditProduct, setSelectedEditProduct] = useState(null);
+
   const [view, setView] = useState("grid");
 
   // Table and grid data handlling
@@ -49,6 +52,25 @@ const ProductsAll = () => {
   function onPageChange(p) {
     setPage(p);
   }
+  function openEditModal(product) {
+    setSelectedEditProduct(product);
+    setIsEditModalOpen(true);
+  }
+  function handleEditChange(e) {
+    const { name, value } = e.target;
+    setSelectedEditProduct((prev) => ({ ...prev, [name]: value }));
+  }
+  function saveProductChanges() {
+    setData((prevData) =>
+      prevData.map((p) => (p.id === selectedEditProduct.id ? selectedEditProduct : p))
+    );
+    setIsEditModalOpen(false);
+  }
+  function deleteProduct(productId) {
+    setData((prevData) => prevData.filter((product) => product.id !== productId));
+    setIsModalOpen(false);
+  }
+    
 
   // on page change, load new sliced data
   // here you would make another server request for new data
@@ -79,8 +101,10 @@ const ProductsAll = () => {
       setView("list");
     }
   };
+  
 
   return (
+    
     <div>
       <PageTitle>All Products</PageTitle>
 
@@ -150,44 +174,113 @@ const ProductsAll = () => {
         </CardBody>
       </Card>
 
-      {/* Delete product model */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ModalHeader className="flex items-center">
-          {/* <div className="flex items-center"> */}
-          <Icon icon={TrashIcon} className="w-6 h-6 mr-3" />
-          Delete Product
-          {/* </div> */}
-        </ModalHeader>
-        <ModalBody>
-          Make sure you want to delete product{" "}
-          {selectedDeleteProduct && `"${selectedDeleteProduct.name}"`}
-        </ModalBody>
-        <ModalFooter>
-          {/* I don't like this approach. Consider passing a prop to ModalFooter
-           * that if present, would duplicate the buttons in a way similar to this.
-           * Or, maybe find some way to pass something like size="large md:regular"
-           * to Button
-           */}
-          <div className="hidden sm:block">
-            <Button layout="outline" onClick={closeModal}>
-              Cancel
-            </Button>
-          </div>
-          <div className="hidden sm:block">
-            <Button>Delete</Button>
-          </div>
-          <div className="block w-full sm:hidden">
-            <Button block size="large" layout="outline" onClick={closeModal}>
-              Cancel
-            </Button>
-          </div>
-          <div className="block w-full sm:hidden">
-            <Button block size="large">
-              Delete
-            </Button>
-          </div>
-        </ModalFooter>
-      </Modal>
+     {/* Edit Product Modal */}
+     <Modal 
+  isOpen={isEditModalOpen} 
+  onClose={() => setIsEditModalOpen(false)}
+  className="max-h-[90vh] overflow-y-auto bg-white shadow-lg rounded-lg p-6"
+>
+  <ModalHeader>Edit Product</ModalHeader>
+  <ModalBody>
+    {selectedEditProduct && (
+      <div className="space-y-3">
+        <Label>
+          <span>Product Name</span>
+          <input
+            name="name"
+            value={selectedEditProduct.name || ""}
+            onChange={handleEditChange}
+            className="w-full mt-1 p-2 border rounded"
+          />
+        </Label>
+
+        <Label>
+          <span>Price</span>
+          <input
+            name="price"
+            type="text"
+            value={selectedEditProduct.price || ""}
+            onChange={handleEditChange}
+            className="w-full mt-1 p-2 border rounded"
+          />
+        </Label>
+
+        <Label>
+          <span>Quantity (QTY)</span>
+          <input
+            name="qty"
+            type="number"
+            value={selectedEditProduct.qty !== undefined ? selectedEditProduct.qty : ""}
+            onChange={handleEditChange}
+            className="w-full mt-1 p-2 border rounded"
+          />
+        </Label>
+
+        <Label>
+          <span>Short Description</span>
+          <textarea
+            name="shortDescription"
+            value={selectedEditProduct.shortDescription || ""}
+            onChange={handleEditChange}
+            className="w-full mt-1 p-2 border rounded"
+            rows="3"
+          />
+        </Label>
+
+        <Label>
+          <span>Status</span>
+          <select
+            name="status"
+            value={selectedEditProduct.qty > 0 ? "In Stock" : "Out of Stock"}
+            onChange={handleEditChange}
+            className="w-full mt-1 p-2 border rounded"
+          >
+            <option value="In Stock">In Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </Label>
+
+        <Label>
+          <span>Upload Image</span>
+          <input
+            type="file"
+            className="w-full mt-1 p-2 border rounded"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              setSelectedEditProduct((prev) => ({
+                ...prev,
+                photo: URL.createObjectURL(file),
+              }));
+            }}
+          />
+        </Label>
+      </div>
+    )}
+  </ModalBody>
+  <ModalFooter>
+    <Button layout="outline" onClick={() => setIsEditModalOpen(false)}>
+      Cancel
+    </Button>
+    <Button onClick={saveProductChanges}>Update</Button>
+  </ModalFooter>
+</Modal>
+
+
+{/* Delete Product Modal */}
+<Modal isOpen={isModalOpen} onClose={closeModal}>
+  <ModalHeader>Delete Product</ModalHeader>
+  <ModalBody>
+    Are you sure you want to delete{" "}
+    {selectedDeleteProduct && `"${selectedDeleteProduct.name}"`}?
+  </ModalBody>
+  <ModalFooter>
+    <Button layout="outline" onClick={closeModal}>
+      Cancel
+    </Button>
+    <Button onClick={() => deleteProduct(selectedDeleteProduct.id)}>Delete</Button>
+  </ModalFooter>
+</Modal>
+
 
       {/* Product Views */}
       {view === "list" ? (
@@ -239,11 +332,13 @@ const ProductsAll = () => {
                           />
                         </Link>
                         <Button
-                          icon={EditIcon}
-                          className="mr-3"
-                          layout="outline"
-                          aria-label="Edit"
-                        />
+  icon={EditIcon}
+  className="mr-3"
+  layout="outline"
+  aria-label="Edit"
+  onClick={() => openEditModal(product)}
+/>
+
                         <Button
                           icon={TrashIcon}
                           layout="outline"
@@ -313,13 +408,15 @@ const ProductsAll = () => {
                         </Link>
                       </div>
                       <div>
-                        <Button
-                          icon={EditIcon}
-                          className="mr-3"
-                          layout="outline"
-                          aria-label="Edit"
-                          size="small"
-                        />
+                      <Button
+  icon={EditIcon}
+  className="mr-3"
+  layout="outline"
+  aria-label="Edit"
+  onClick={() => openEditModal(product)}
+  size="small"
+/>
+
                         <Button
                           icon={TrashIcon}
                           layout="outline"

@@ -62,7 +62,7 @@ function Dashboard() {
         </InfoCard>
       </div>
 
-      <div className="grid gap-6 mb-8 md:grid-cols-2">
+      {/* <div className="grid gap-6 mb-8 md:grid-cols-2">
         <ChartCard title="User Analytics">
           <Line {...lineOptions} />
           <ChartLegend legends={lineLegends} />
@@ -72,7 +72,7 @@ function Dashboard() {
           <Doughnut {...doughnutOptions} />
           <ChartLegend legends={doughnutLegends} />
         </ChartCard>
-      </div>
+      </div> */}
 
       <PageTitle>Orders</PageTitle>
       <OrdersTable resultsPerPage={10} />

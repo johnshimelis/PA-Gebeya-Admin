@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import Icon from "../components/Icon";
 import PageTitle from "../components/Typography/PageTitle";
@@ -22,11 +22,13 @@ const FormTitle = ({ children }) => {
 };
 
 const AddProduct = () => {
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+
   return (
     <div>
       <PageTitle>Add New Product</PageTitle>
 
-      {/* Breadcum */}
+      {/* Breadcrumb */}
       <div className="flex text-gray-800 dark:text-gray-300">
         <div className="flex items-center text-purple-600">
           <Icon className="w-5 h-5" aria-hidden="true" icon={HomeIcon} />
@@ -66,7 +68,7 @@ const AddProduct = () => {
               />
             </Label>
 
-            <FormTitle>Stock Qunatity</FormTitle>
+            <FormTitle>Stock Quantity</FormTitle>
             <Label>
               <Input
                 className="mb-4"
@@ -82,6 +84,38 @@ const AddProduct = () => {
                 placeholder="Enter product full description here"
               />
             </Label>
+
+            {/* Discount Toggle and Input */}
+            <div className="flex items-center justify-between mb-4">
+              <FormTitle>Enable Discount</FormTitle>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={discountEnabled}
+                  onChange={() => setDiscountEnabled(!discountEnabled)}
+                />
+                <div
+                  className={`relative w-12 h-6 rounded-full transition-all flex items-center px-1 ${discountEnabled ? "bg-red-500" : "bg-gray-400"}`}
+                >
+                  <div
+                    className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform transform ${discountEnabled ? "translate-x-6" : "translate-x-0"}`}
+                  ></div>
+                </div>
+              </label>
+            </div>
+
+            {discountEnabled && (
+              <div>
+                <FormTitle>Discount Amount</FormTitle>
+                <Label>
+                  <Input
+                    className="mb-4"
+                    placeholder="Enter discount amount"
+                  />
+                </Label>
+              </div>
+            )}
 
             <div className="w-full">
               <Button size="large" iconLeft={AddIcon}>
@@ -106,7 +140,7 @@ const AddProduct = () => {
               <Select className="mt-1">
                 <option>Electronic</option>
                 <option>Fashion</option>
-                <option>Cosmatics</option>
+                <option>Cosmetics</option>
                 <option>Food and Meal</option>
               </Select>
             </Label>
