@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import PageTitle from "../components/Typography/PageTitle";
-import { NavLink, useHistory } from "react-router-dom"; // Replaced useNavigate with useHistory
+import { NavLink } from "react-router-dom"; // Replaced useNavigate with useHistory
+import { useHistory } from 'react-router-dom'; // Changed to useHistory
+
 import { HomeIcon } from "../icons";
 import { Card, CardBody, Label, Select } from "@windmill/react-ui";
 import OrdersTable from "../components/OrdersTable";
@@ -14,7 +16,7 @@ const Orders = () => {
   // Pagination setup
   const [resultsPerPage, setResultPerPage] = useState(10);
   const [filter, setFilter] = useState("all");
-  const history = useHistory(); // Replaced useNavigate with useHistory
+  const history = useHistory(); // Changed from useNavigate to useHistory
 
   const handleFilter = (filter_name) => {
     if (filter_name === "All") {
@@ -30,7 +32,7 @@ const Orders = () => {
 
   // Function to handle row click and navigate to order details page
   const handleRowClick = (orderId) => {
-    history.push(`/app/orderDetail/${orderId}`); // Updated for useHistory
+    history.push(`/app/orderDetail/${orderId}`); // Changed from navigate.push to history.push
   };
 
   return (

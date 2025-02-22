@@ -37,10 +37,12 @@ import { ReactComponent as StarIcon } from "./star.svg";
 import { ReactComponent as AddIcon } from "./add.svg";
 import { ReactComponent as PublishIcon } from "./publish.svg";
 import { ReactComponent as StoreIcon } from "./store.svg";
+// import {ReactComponent as AdsIcon} from "./megaphone.png";
 // Add the Category Icon here
 import { ReactComponent as CategoryIcon } from "./cart.svg"; // Assuming category.svg is in the same folder
 
 export {
+  // AdsIcon,
   GroupIcon,
   UserIcon,
   AddIcon,

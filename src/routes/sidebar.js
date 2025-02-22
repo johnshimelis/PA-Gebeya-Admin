@@ -6,11 +6,18 @@
  * `routes/index.js`
  */
 const routes = [
+
   {
     path: "/app/dashboard", // the url
     icon: "HomeIcon", // the component being exported from icons/index.js
     name: "Dashboard", // name that appear in Sidebar
   },
+  {
+    path: "/app/ads",
+    icon: "HomeIcon", // Choose an icon that represents ads or promotions
+    name: "Ads",
+  },
+  
   {
     path: "/app/orders",
     icon: "CartIcon",

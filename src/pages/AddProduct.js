@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import Icon from "../components/Icon";
 import PageTitle from "../components/Typography/PageTitle";
-import { HomeIcon, AddIcon, PublishIcon, StoreIcon } from "../icons";
+import { HomeIcon, AddIcon } from "../icons";
 import {
   Card,
   CardBody,
@@ -13,16 +13,84 @@ import {
   Select,
 } from "@windmill/react-ui";
 
-const FormTitle = ({ children }) => {
-  return (
-    <h2 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
-      {children}
-    </h2>
-  );
-};
+const FormTitle = ({ children }) => (
+  <h2 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+    {children}
+  </h2>
+);
 
 const AddProduct = () => {
-  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [product, setProduct] = useState({
+    name: "",
+    price: "",
+    shortDescription: "",
+    fullDescription: "",
+    category: "",
+    stockQuantity: "",
+    image: null, // Image will be stored as file
+  });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/categories");
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    if (e.target.name === "image") {
+      setProduct({ ...product, image: e.target.files[0] }); // Handle file input
+    } else {
+      setProduct({ ...product, [e.target.name]: e.target.value });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent form from reloading the page
+    
+    const formData = new FormData();
+    formData.append("name", product.name);
+    formData.append("price", product.price);
+    formData.append("shortDescription", product.shortDescription);
+    formData.append("fullDescription", product.fullDescription);
+    formData.append("category", product.category);
+    formData.append("stockQuantity", product.stockQuantity);
+    if (product.image) {
+      formData.append("image", product.image); // Append image file if exists
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/api/products/", {
+        method: "POST",
+        body: formData, // Send FormData with file
+      });
+
+      if (response.ok) {
+        alert("Product added successfully!");
+        setProduct({
+          name: "",
+          price: "",
+          shortDescription: "",
+          fullDescription: "",
+          category: "",
+          stockQuantity: "",
+          image: null,
+        });
+      } else {
+        alert("Error adding product.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   return (
     <div>
@@ -43,107 +111,85 @@ const AddProduct = () => {
       <div className="w-full mt-8 grid gap-4 grid-col md:grid-cols-3 ">
         <Card className="row-span-2 md:col-span-2">
           <CardBody>
-            <FormTitle>Product Image</FormTitle>
-            <input
-              type="file"
-              className="mb-4 text-gray-800 dark:text-gray-300"
-            />
-
             <FormTitle>Product Name</FormTitle>
             <Label>
-              <Input className="mb-4" placeholder="Type product name here" />
+              <Input
+                name="name"
+                value={product.name}
+                onChange={handleChange}
+                placeholder="Type product name here"
+              />
             </Label>
 
             <FormTitle>Product Price</FormTitle>
             <Label>
-              <Input className="mb-4" placeholder="Enter product price here" />
+              <Input
+                name="price"
+                type="number"
+                value={product.price}
+                onChange={handleChange}
+                placeholder="Enter product price here"
+              />
             </Label>
 
-            <FormTitle>Short description</FormTitle>
+            <FormTitle>Short Description</FormTitle>
             <Label>
               <Textarea
-                className="mb-4"
-                rows="3"
-                placeholder="Enter product short description here"
+                name="shortDescription"
+                value={product.shortDescription}
+                onChange={handleChange}
+                placeholder="Enter short description"
               />
+            </Label>
+
+            <FormTitle>Full Description</FormTitle>
+            <Label>
+              <Textarea
+                name="fullDescription"
+                value={product.fullDescription}
+                onChange={handleChange}
+                placeholder="Enter full description"
+              />
+            </Label>
+
+            <FormTitle>Category</FormTitle>
+            <Label>
+              <Select
+                name="category"
+                value={product.category}
+                onChange={handleChange}
+              >
+                {categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
             </Label>
 
             <FormTitle>Stock Quantity</FormTitle>
             <Label>
               <Input
-                className="mb-4"
-                placeholder="Enter product stock quantity"
+                name="stockQuantity"
+                type="number"
+                value={product.stockQuantity}
+                onChange={handleChange}
+                placeholder="Enter stock quantity"
               />
             </Label>
 
-            <FormTitle>Full description</FormTitle>
+            <FormTitle>Product Image</FormTitle>
             <Label>
-              <Textarea
-                className="mb-4"
-                rows="5"
-                placeholder="Enter product full description here"
+              <Input
+                name="image"
+                type="file"
+                onChange={handleChange}
               />
             </Label>
 
-            {/* Discount Toggle and Input */}
-            <div className="flex items-center justify-between mb-4">
-              <FormTitle>Enable Discount</FormTitle>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={discountEnabled}
-                  onChange={() => setDiscountEnabled(!discountEnabled)}
-                />
-                <div
-                  className={`relative w-12 h-6 rounded-full transition-all flex items-center px-1 ${discountEnabled ? "bg-red-500" : "bg-gray-400"}`}
-                >
-                  <div
-                    className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform transform ${discountEnabled ? "translate-x-6" : "translate-x-0"}`}
-                  ></div>
-                </div>
-              </label>
-            </div>
-
-            {discountEnabled && (
-              <div>
-                <FormTitle>Discount Amount</FormTitle>
-                <Label>
-                  <Input
-                    className="mb-4"
-                    placeholder="Enter discount amount"
-                  />
-                </Label>
-              </div>
-            )}
-
-            <div className="w-full">
-              <Button size="large" iconLeft={AddIcon}>
-                Add Product
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card className="h-48">
-          <CardBody>
-            <div className="flex mb-8">
-              <Button layout="primary" className="mr-3" iconLeft={PublishIcon}>
-                Publish
-              </Button>
-              <Button layout="link" iconLeft={StoreIcon}>
-                Save as Draft
-              </Button>
-            </div>
-            <Label className="mt-4">
-              <FormTitle>Select Product Category</FormTitle>
-              <Select className="mt-1">
-                <option>Electronic</option>
-                <option>Fashion</option>
-                <option>Cosmetics</option>
-                <option>Food and Meal</option>
-              </Select>
-            </Label>
+            <Button size="large" iconLeft={AddIcon} onClick={handleSubmit}>
+              Add Product
+            </Button>
           </CardBody>
         </Card>
       </div>

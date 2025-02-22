@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Button, Select, Card } from '@windmill/react-ui';
 
 const OrderDetail = ({ orders = [], setOrders }) => {

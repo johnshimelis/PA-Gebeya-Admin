@@ -16,12 +16,19 @@ const Blank = lazy(() => import("../pages/Blank"));
 const SubCategories = lazy(() => import("../pages/SubCategories"));
 const CategoriesAll = lazy(() => import("../pages/categoryAll"));
 const OrderDetail = lazy(() => import("../pages/OrderDetail"));
+const Ads = lazy(() => import("../pages/Ads"));
+
 
 const routes = [
   {
     path: "/dashboard",
     component: Dashboard,
   },
+  {
+    path: "/ads",
+    component: Ads,
+  },
+  
   {
     path: "/orders",
     component: Orders,

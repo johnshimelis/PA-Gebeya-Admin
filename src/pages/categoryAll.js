@@ -22,14 +22,15 @@ import {
   Label,
 } from "@windmill/react-ui";
 import Icon from "../components/Icon";
-import categoriesData from "../utils/demo/categoriesData";
+import axios from "axios"; // Import Axios
+
+const API_BASE_URL = "http://localhost:5000/api/categories"; // Update API URL
 
 const CategoriesAll = () => {
   const [page, setPage] = useState(1);
-  const [data, setData] = useState([]);
-  const [resultsPerPage, setResultsPerPage] = useState(10);
-  const [allCategories, setAllCategories] = useState(categoriesData);
-  const totalResults = allCategories.length;
+  const [categories, setCategories] = useState([]);
+  const [resultsPerPage] = useState(10);
+  const totalResults = categories.length;
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -38,47 +39,47 @@ const CategoriesAll = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
-  // Load paginated data
+  // Fetch Categories
   useEffect(() => {
-    setData(allCategories.slice((page - 1) * resultsPerPage, page * resultsPerPage));
-  }, [page, resultsPerPage, allCategories]);
+    axios.get(API_BASE_URL)
+      .then((response) => {
+        setCategories(response.data);
+        console.log("Fetched Categories:", response.data); // Debugging
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
 
   function onPageChange(p) {
     setPage(p);
   }
 
   // Open Delete Modal
-  function openDeleteModal(categoryId) {
-    let category = allCategories.find((cat) => cat.id === categoryId);
+  function openDeleteModal(category) {
     setSelectedCategory(category);
     setIsDeleteModalOpen(true);
   }
 
-  // Close Delete Modal
   function closeDeleteModal() {
     setIsDeleteModalOpen(false);
   }
 
-  // Handle Category Deletion
-  const handleDelete = () => {
+  // Handle Delete
+  const handleDelete = async () => {
     if (selectedCategory) {
-      const updatedCategories = allCategories.filter(
-        (cat) => cat.id !== selectedCategory.id
-      );
-      setAllCategories(updatedCategories);
-      setIsDeleteModalOpen(false);
-
-      // Adjust pagination if necessary
-      const lastPage = Math.ceil(updatedCategories.length / resultsPerPage);
-      if (page > lastPage) {
-        setPage(lastPage);
+      try {
+        await axios.delete(`${API_BASE_URL}/${selectedCategory._id}`);
+        setCategories(categories.filter(cat => cat._id !== selectedCategory._id));
+        setIsDeleteModalOpen(false);
+      } catch (error) {
+        console.error("Error deleting category:", error);
       }
     }
   };
 
   // Open Edit Modal
-  const openEditModal = (categoryId) => {
-    let category = allCategories.find((cat) => cat.id === categoryId);
+  const openEditModal = (category) => {
     setSelectedCategory(category);
     setUpdatedName(category.name);
     setSelectedImage(null);
@@ -86,10 +87,9 @@ const CategoriesAll = () => {
     setIsEditModalOpen(true);
   };
 
-  // Close Edit Modal
-  const closeEditModal = () => {
+  function closeEditModal() {
     setIsEditModalOpen(false);
-  };
+  }
 
   // Handle Image Change
   const handleImageChange = (e) => {
@@ -102,26 +102,32 @@ const CategoriesAll = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
-    } else {
-      setImagePreview("");
     }
   };
 
   // Handle Update Category
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (selectedCategory) {
-      const updatedCategories = allCategories.map((cat) => {
-        if (cat.id === selectedCategory.id) {
-          return {
-            ...cat,
-            name: updatedName,
-            image: imagePreview,
-          };
-        }
-        return cat;
-      });
-      setAllCategories(updatedCategories);
-      setIsEditModalOpen(false);
+      try {
+        const formData = new FormData();
+        formData.append("name", updatedName);
+        if (selectedImage) formData.append("image", selectedImage);
+
+        await axios.put(`${API_BASE_URL}/${selectedCategory._id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat._id === selectedCategory._id
+              ? { ...cat, name: updatedName, image: imagePreview }
+              : cat
+          )
+        );
+        setIsEditModalOpen(false);
+      } catch (error) {
+        console.error("Error updating category:", error);
+      }
     }
   };
 
@@ -151,17 +157,30 @@ const CategoriesAll = () => {
           <TableHeader>
             <tr>
               <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
+              <TableCell>Image</TableCell>
               <TableCell>Action</TableCell>
             </tr>
           </TableHeader>
           <TableBody>
-            {data.map((category) => (
-              <TableRow key={category.id}>
+            {categories.slice((page - 1) * resultsPerPage, page * resultsPerPage).map((category) => (
+              <TableRow key={category._id}>
                 <TableCell>
                   <p className="font-semibold">{category.name}</p>
                 </TableCell>
-                <TableCell>{category.description}</TableCell>
+                <TableCell>
+                  {/* Ensure the image path is a full URL */}
+                  {category.image ? (
+  <img
+    src={category.image}
+    alt={category.name}
+    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '5px' }}
+  />
+) : (
+  <p>No Image</p>
+)}
+
+
+                </TableCell>
                 <TableCell>
                   <div className="flex">
                     <Button
@@ -169,12 +188,12 @@ const CategoriesAll = () => {
                       className="mr-3"
                       layout="outline"
                       aria-label="Edit"
-                      onClick={() => openEditModal(category.id)}
+                      onClick={() => openEditModal(category)}
                     />
                     <Button
                       icon={TrashIcon}
                       layout="outline"
-                      onClick={() => openDeleteModal(category.id)}
+                      onClick={() => openDeleteModal(category)}
                       aria-label="Delete"
                     />
                   </div>

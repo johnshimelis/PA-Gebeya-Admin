@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PageTitle from "../components/Typography/PageTitle";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useHistory } from "react-router-dom";
+
 import {
   EditIcon,
   EyeIcon,
@@ -34,9 +35,16 @@ import response from "../utils/demo/productData";
 import Icon from "../components/Icon";
 import { genRating } from "../utils/genarateRating";
 
+
+
+
+
 const ProductsAll = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 const [selectedEditProduct, setSelectedEditProduct] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [selectedDeleteProduct, setSelectedDeleteProduct] = useState(null);
+const history = useHistory();
 
   const [view, setView] = useState("grid");
 
@@ -53,40 +61,185 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
     setPage(p);
   }
   function openEditModal(product) {
-    setSelectedEditProduct(product);
-    setIsEditModalOpen(true);
+    console.log("Editing product:", product);
+    if (product && product._id) {  // Changed `id` to `_id`
+      setSelectedEditProduct({
+        ...product,
+        qty: product.stockQuantity, // Ensure stockQuantity is mapped to qty
+      });
+      setIsEditModalOpen(true);
+    } else {
+      console.error("Product ID is undefined!", product);
+    }
   }
+  
+  
+  
   function handleEditChange(e) {
     const { name, value } = e.target;
-    setSelectedEditProduct((prev) => ({ ...prev, [name]: value }));
-  }
-  function saveProductChanges() {
+    const updatedValue = name === "qty" ? parseInt(value, 10) : value;
+  
+    setSelectedEditProduct((prev) => {
+      const newQty = name === "qty" ? updatedValue : prev.qty;
+      
+      return {
+        ...prev,
+        [name]: updatedValue,
+        status: newQty > 0 ? "In Stock" : "Out of Stock", // Live update status
+      };
+    });
+  
+    // 🔹 Also update the `data` state live for the frontend to reflect changes immediately
     setData((prevData) =>
-      prevData.map((p) => (p.id === selectedEditProduct.id ? selectedEditProduct : p))
+      prevData.map((product) =>
+        product._id === selectedEditProduct._id
+          ? { 
+              ...product, 
+              qty: name === "qty" ? updatedValue : product.qty, 
+              stockQuantity: name === "qty" ? updatedValue : product.stockQuantity, 
+              status: (name === "qty" ? updatedValue : product.qty) > 0 ? "In Stock" : "Out of Stock"
+            }
+          : product
+      )
     );
-    setIsEditModalOpen(false);
   }
-  function deleteProduct(productId) {
-    setData((prevData) => prevData.filter((product) => product.id !== productId));
-    setIsModalOpen(false);
+  
+  // After the saveProductChanges or deleteProduct, refresh the state
+  const saveProductChanges = async (productId, updatedData) => {
+    if (!productId) {
+        console.error("Product ID is undefined!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("name", updatedData.name);
+    formData.append("price", updatedData.price);
+    formData.append("stockQuantity", updatedData.qty);
+    formData.append("shortDescription", updatedData.shortDescription);
+
+    let newImagePreview = updatedData.previewUrl || updatedData.photo; // Keep the preview
+
+    if (updatedData.photo instanceof File) {
+        formData.append("image", updatedData.photo);
+    }
+
+    try {
+        const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+            method: "PUT",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to update product");
+        }
+
+        const updatedProduct = await response.json(); // Get updated product details
+
+        console.log("Product updated successfully", updatedProduct);
+
+        // ✅ Ensure the new image is immediately reflected in the frontend
+        setData((prevData) =>
+            prevData.map((product) =>
+                product._id === productId
+                    ? { 
+                        ...product, 
+                        name: updatedData.name,
+                        price: updatedData.price,
+                        stockQuantity: updatedData.qty,
+                        shortDescription: updatedData.shortDescription,
+                        status: updatedData.qty > 0 ? "In Stock" : "Out of Stock",
+                        photo: updatedProduct.photo 
+                            ? `http://localhost:5000/uploads/${updatedProduct.photo}`  // Use returned photo URL
+                            : newImagePreview, // Keep the preview URL if new image was uploaded
+                    }
+                    : product
+            )
+        );
+
+        setIsEditModalOpen(false);
+    } catch (error) {
+        console.error("Error updating product:", error);
+    }
+};
+
+
+const deleteProduct = async (productId) => {
+  if (!productId) {
+    console.error("Product ID is undefined!");
+    return;
   }
-    
 
-  // on page change, load new sliced data
-  // here you would make another server request for new data
-  useEffect(() => {
-    setData(response.slice((page - 1) * resultsPerPage, page * resultsPerPage));
-  }, [page, resultsPerPage]);
+  try {
+    const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+      method: "DELETE",
+    });
 
-  // Delete action model
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDeleteProduct, setSelectedDeleteProduct] = useState(null);
-  async function openModal(productId) {
-    let product = await data.filter((product) => product.id === productId)[0];
-    // console.log(product);
+    if (!response.ok) {
+      throw new Error("Failed to delete product");
+    }
+
+    // Remove the deleted product from the data state
+    setData((prevData) => prevData.filter((product) => product._id !== productId));
+    setIsModalOpen(false); // Close the modal after deletion
+    console.log("Product deleted successfully");
+  } catch (error) {
+    console.error("Error deleting product:", error);
+  }
+};
+
+
+  // Adding Loading state for fetching products
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  async function fetchProducts() {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/products/`);
+      const products = await res.json();
+      console.log("Fetched products:", products); // Debugging
+      setData(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchProducts();
+}, []);
+
+
+// Inside your render JSX, add loading state display
+if (loading) {
+  return <div>Loading products...</div>;
+}
+
+  
+  
+
+ 
+  
+
+  function openModal(productId) {
+    if (!productId) {
+      console.error("Product ID is undefined!");
+      return;
+    }
+  
+    const product = data.find(product => product._id === productId);
+    if (!product) {
+      console.error("Product not found!");
+      return;
+    }
+  
     setSelectedDeleteProduct(product);
     setIsModalOpen(true);
   }
+
+  
+  
+  
 
   function closeModal() {
     setIsModalOpen(false);
@@ -178,12 +331,14 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
      <Modal 
   isOpen={isEditModalOpen} 
   onClose={() => setIsEditModalOpen(false)}
-  className="max-h-[90vh] overflow-y-auto bg-white shadow-lg rounded-lg p-6"
+  className="max-h-[90vh] overflow-y-auto bg-white shadow-lg rounded-lg p-6 w-[800px]" // Increased width
 >
   <ModalHeader>Edit Product</ModalHeader>
   <ModalBody>
     {selectedEditProduct && (
-      <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-4"> {/* Two-column layout */}
+
+        {/* Product Name */}
         <Label>
           <span>Product Name</span>
           <input
@@ -194,6 +349,7 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
           />
         </Label>
 
+        {/* Price */}
         <Label>
           <span>Price</span>
           <input
@@ -205,6 +361,7 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
           />
         </Label>
 
+        {/* Quantity */}
         <Label>
           <span>Quantity (QTY)</span>
           <input
@@ -216,52 +373,88 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
           />
         </Label>
 
-        <Label>
-          <span>Short Description</span>
-          <textarea
-            name="shortDescription"
-            value={selectedEditProduct.shortDescription || ""}
-            onChange={handleEditChange}
-            className="w-full mt-1 p-2 border rounded"
-            rows="3"
-          />
-        </Label>
-
+        {/* Status */}
         <Label>
           <span>Status</span>
           <select
             name="status"
             value={selectedEditProduct.qty > 0 ? "In Stock" : "Out of Stock"}
-            onChange={handleEditChange}
             className="w-full mt-1 p-2 border rounded"
+            disabled // Prevent manual selection
           >
             <option value="In Stock">In Stock</option>
             <option value="Out of Stock">Out of Stock</option>
           </select>
         </Label>
 
+        {/* Short Description (Full Width) */}
+        <div className="col-span-2">
+          <Label>
+            <span>Short Description</span>
+            <textarea
+              name="shortDescription"
+              value={selectedEditProduct.shortDescription || ""}
+              onChange={handleEditChange}
+              className="w-full mt-1 p-2 border rounded"
+              rows="3"
+            />
+          </Label>
+        </div>
+
+        {/* Image Upload (Full Width) */}
+        <div className="col-span-2">
         <Label>
-          <span>Upload Image</span>
-          <input
-            type="file"
-            className="w-full mt-1 p-2 border rounded"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              setSelectedEditProduct((prev) => ({
-                ...prev,
-                photo: URL.createObjectURL(file),
-              }));
-            }}
-          />
-        </Label>
+  <span>Upload Image</span>
+  <input
+    type="file"
+    accept="image/*"
+    className="w-full mt-1 p-2 border rounded"
+    onChange={(e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        
+        // ✅ Update the state instantly with preview
+        setSelectedEditProduct((prev) => ({
+          ...prev,
+          photo: file, // Store file for upload
+          previewUrl,  // Temporary preview
+        }));
+      }
+    }}
+  />
+</Label>
+
+{/* Live Preview of Selected Image */}
+{selectedEditProduct?.previewUrl ? (
+  <img
+    src={selectedEditProduct.previewUrl}
+    alt="Preview"
+    className="w-32 h-32 mt-2 object-cover rounded-md border"
+  />
+) : selectedEditProduct?.photo ? (
+  <img
+    src={`http://localhost:5000/uploads/${selectedEditProduct.photo}`}
+    alt="Preview"
+    className="w-32 h-32 mt-2 object-cover rounded-md border"
+  />
+) : (
+  <p className="text-sm text-gray-500 mt-1">No image selected</p>
+)}
+
+        </div>
+
       </div>
     )}
   </ModalBody>
+  
   <ModalFooter>
     <Button layout="outline" onClick={() => setIsEditModalOpen(false)}>
       Cancel
     </Button>
-    <Button onClick={saveProductChanges}>Update</Button>
+    <Button onClick={() => saveProductChanges(selectedEditProduct._id, selectedEditProduct)}>
+      Update
+    </Button>
   </ModalFooter>
 </Modal>
 
@@ -277,7 +470,7 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
     <Button layout="outline" onClick={closeModal}>
       Cancel
     </Button>
-    <Button onClick={() => deleteProduct(selectedDeleteProduct.id)}>Delete</Button>
+    <Button onClick={() => deleteProduct(selectedDeleteProduct._id)}>Delete</Button>
   </ModalFooter>
 </Modal>
 
@@ -285,81 +478,76 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
       {/* Product Views */}
       {view === "list" ? (
         <>
-          <TableContainer className="mb-8">
-            <Table>
-              <TableHeader>
-                <tr>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Stock</TableCell>
-                  <TableCell>Rating</TableCell>
-                  <TableCell>QTY</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell>Action</TableCell>
-                </tr>
-              </TableHeader>
-              <TableBody>
-                {data.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center text-sm">
-                        <Avatar
-                          className="hidden mr-4 md:block"
-                          src={product.photo}
-                          alt="Product image"
-                        />
-                        <div>
-                          <p className="font-semibold">{product.name}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge type={product.qty > 0 ? "success" : "danger"}>
-                        {product.qty > 0 ? "In Stock" : "Out of Stock"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {genRating(product.rating, product.reviews.length, 5)}
-                    </TableCell>
-                    <TableCell className="text-sm">{product.qty}</TableCell>
-                    <TableCell className="text-sm">{product.price}</TableCell>
-                    <TableCell>
-                      <div className="flex">
-                        <Link to={`/app/product/${product.id}`}>
-                          <Button
-                            icon={EyeIcon}
-                            className="mr-3"
-                            aria-label="Preview"
-                          />
-                        </Link>
-                        <Button
-  icon={EditIcon}
-  className="mr-3"
-  layout="outline"
-  aria-label="Edit"
-  onClick={() => openEditModal(product)}
-/>
+         <TableContainer>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableCell>Image</TableCell>
+        <TableCell>Product Name</TableCell>
+        <TableCell>Price</TableCell>
+        <TableCell>Stock Quantity</TableCell>
+        <TableCell>Status</TableCell>
+        <TableCell>Actions</TableCell>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {data.slice((page - 1) * resultsPerPage, page * resultsPerPage).map((product) => (
+        <TableRow key={product._id}>
+          <TableCell>
+            <Avatar src={product.photo} size="large" />
+          </TableCell>
+          <TableCell>{product.name}</TableCell>
+          <TableCell>${product.price}</TableCell>
+          <TableCell>{product.stockQuantity}</TableCell>
+          <TableCell>
+            <Badge type={product.stockQuantity > 0 ? "success" : "danger"}>
+              {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
+            </Badge>
+          </TableCell>
+          <TableCell>
+  <div className="flex space-x-2">
+    <Link
+      to={{
+        pathname: `/app/product/${product._id}`,
+        state: { product }, // Passing full product data, including stockQuantity
+      }}
+    >
+      <Button
+        icon={EyeIcon}
+        className="mr-3 p-2"
+        aria-label="Preview"
+        size="small"
+      />
+    </Link>
 
-                        <Button
-                          icon={TrashIcon}
-                          layout="outline"
-                          onClick={() => openModal(product.id)}
-                          aria-label="Delete"
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <TableFooter>
-              <Pagination
-                totalResults={totalResults}
-                resultsPerPage={resultsPerPage}
-                label="Table navigation"
-                onChange={onPageChange}
-              />
-            </TableFooter>
-          </TableContainer>
+    {/* Edit Icon Button */}
+    <Button
+      icon={EditIcon}
+      onClick={() => openEditModal(product)}
+      className="p-2"
+      size="small"
+    />
+
+    {/* Trash Icon Button */}
+    <Button
+      icon={TrashIcon}
+      onClick={() => openModal(product._id)}
+      className="p-2"
+      size="small"
+    />
+  </div>
+</TableCell>
+
+
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+  <TableFooter>
+    <Pagination totalResults={totalResults} resultsPerPage={resultsPerPage} onChange={onPageChange} />
+  </TableFooter>
+</TableContainer>
+
         </>
       ) : (
         <>
@@ -368,24 +556,27 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
             {data.map((product) => (
               <div className="" key={product.id}>
                 <Card>
-                  <img
-                    className="object-cover w-full"
-                    src={product.photo}
-                    alt="product"
-                  />
+                <img
+  className="object-cover w-full"
+  src={product.photo ? product.photo : "../icons/megaphone.png"}
+  alt="Image is loading"
+/>
+
+
+
+
+
                   <CardBody>
                     <div className="mb-3 flex items-center justify-between">
                       <p className="font-semibold truncate  text-gray-600 dark:text-gray-300">
                         {product.name}
                       </p>
-                      <Badge
-                        type={product.qty > 0 ? "success" : "danger"}
-                        className="whitespace-nowrap"
-                      >
-                        <p className="break-normal">
-                          {product.qty > 0 ? `In Stock` : "Out of Stock"}
-                        </p>
-                      </Badge>
+                      <Badge type={product.stockQuantity > 0 ? "success" : "danger"}>
+  {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
+</Badge>
+
+
+
                     </div>
 
                     <p className="mb-2 text-purple-500 font-bold text-lg">
@@ -398,14 +589,21 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Link to={`/app/product/${product.id}`}>
-                          <Button
-                            icon={EyeIcon}
-                            className="mr-3"
-                            aria-label="Preview"
-                            size="small"
-                          />
-                        </Link>
+                      <Link 
+  to={{
+    pathname: `/app/product/${product._id}`, 
+    state: { product } // Passing full product data, including stockQuantity
+  }}
+>
+  <Button
+    icon={EyeIcon}
+    className="mr-3"
+    aria-label="Preview"
+    size="small"
+  />
+</Link>
+
+
                       </div>
                       <div>
                       <Button
@@ -417,13 +615,14 @@ const [selectedEditProduct, setSelectedEditProduct] = useState(null);
   size="small"
 />
 
-                        <Button
-                          icon={TrashIcon}
-                          layout="outline"
-                          aria-label="Delete"
-                          onClick={() => openModal(product.id)}
-                          size="small"
-                        />
+<Button icon={TrashIcon} layout="outline" onClick={() => {
+  if (product && product._id) {
+    openModal(product._id);
+  } else {
+    console.error("Product ID is undefined or product is missing!");
+  }
+}} />
+
                       </div>
                     </div>
                   </CardBody>
