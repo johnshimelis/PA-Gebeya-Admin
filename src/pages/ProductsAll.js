@@ -77,19 +77,21 @@ const history = useHistory();
   
   function handleEditChange(e) {
     const { name, value } = e.target;
-    const updatedValue = name === "qty" ? parseInt(value, 10) : value;
+    const updatedValue = name === "qty" || name === "discount" ? parseFloat(value) : value;
   
     setSelectedEditProduct((prev) => {
       const newQty = name === "qty" ? updatedValue : prev.qty;
-      
+      const newDiscount = name === "discount" ? updatedValue : prev.discount;
+  
       return {
         ...prev,
         [name]: updatedValue,
         status: newQty > 0 ? "In Stock" : "Out of Stock", // Live update status
+        hasDiscount: newDiscount > 0, // Mark discount as applied if greater than 0
       };
     });
   
-    // 🔹 Also update the `data` state live for the frontend to reflect changes immediately
+    // Also update the `data` state live for the frontend to reflect changes immediately
     setData((prevData) =>
       prevData.map((product) =>
         product._id === selectedEditProduct._id
@@ -97,27 +99,36 @@ const history = useHistory();
               ...product, 
               qty: name === "qty" ? updatedValue : product.qty, 
               stockQuantity: name === "qty" ? updatedValue : product.stockQuantity, 
+              discount: name === "discount" ? updatedValue : product.discount,
+              hasDiscount: name === "discount" && updatedValue > 0,
               status: (name === "qty" ? updatedValue : product.qty) > 0 ? "In Stock" : "Out of Stock"
             }
           : product
       )
     );
   }
-  
-  // After the saveProductChanges or deleteProduct, refresh the state
-  const saveProductChanges = async (productId, updatedData) => {
+ 
+ 
+const saveProductChanges = async (productId, updatedData) => {
     if (!productId) {
         console.error("Product ID is undefined!");
         return;
     }
 
+    // Calculate the final price after applying the discount
+    const hasDiscount = updatedData.discount > 0;
+    const discountAmount = hasDiscount ? (updatedData.price * updatedData.discount) / 100 : 0;
+    const finalPrice = updatedData.price - discountAmount;
+
     const formData = new FormData();
     formData.append("name", updatedData.name);
-    formData.append("price", updatedData.price);
+    formData.append("price", finalPrice); // ✅ Send updated final price instead of original price
     formData.append("stockQuantity", updatedData.qty);
     formData.append("shortDescription", updatedData.shortDescription);
+    formData.append("discount", updatedData.discount); 
+    formData.append("hasDiscount", hasDiscount ? "true" : "false"); 
 
-    let newImagePreview = updatedData.previewUrl || updatedData.photo; // Keep the preview
+    let newImagePreview = updatedData.previewUrl || updatedData.photo; 
 
     if (updatedData.photo instanceof File) {
         formData.append("image", updatedData.photo);
@@ -133,24 +144,26 @@ const history = useHistory();
             throw new Error("Failed to update product");
         }
 
-        const updatedProduct = await response.json(); // Get updated product details
+        const updatedProduct = await response.json(); 
 
         console.log("Product updated successfully", updatedProduct);
 
-        // ✅ Ensure the new image is immediately reflected in the frontend
+        // ✅ Ensure frontend reflects the discount update
         setData((prevData) =>
             prevData.map((product) =>
                 product._id === productId
                     ? { 
                         ...product, 
                         name: updatedData.name,
-                        price: updatedData.price,
+                        price: finalPrice, // ✅ Ensure frontend also uses the updated final price
                         stockQuantity: updatedData.qty,
                         shortDescription: updatedData.shortDescription,
+                        discount: updatedData.discount, 
+                        hasDiscount, 
                         status: updatedData.qty > 0 ? "In Stock" : "Out of Stock",
                         photo: updatedProduct.photo 
-                            ? `http://localhost:5000/uploads/${updatedProduct.photo}`  // Use returned photo URL
-                            : newImagePreview, // Keep the preview URL if new image was uploaded
+                            ? `http://localhost:5000/uploads/${updatedProduct.photo}`  
+                            : newImagePreview,
                     }
                     : product
             )
@@ -401,59 +414,58 @@ if (loading) {
           </Label>
         </div>
 
+        {/* Discount */}
+        <div className="col-span-2">
+          <Label>
+            <span>Discount</span>
+            <div className="flex items-center space-x-2">
+              <input
+                name="discount"
+                type="number"
+                value={selectedEditProduct.discount || ""}
+                onChange={handleEditChange}
+                className="w-1/2 mt-1 p-2 border rounded"
+              />
+              {selectedEditProduct.hasDiscount && selectedEditProduct.discount > 0 && (
+                <span className="text-green-500">Discount Applied</span>
+              )}
+            </div>
+          </Label>
+        </div>
+
         {/* Image Upload (Full Width) */}
         <div className="col-span-2">
-        <Label>
-  <span>Upload Image</span>
-  <input
-    type="file"
-    accept="image/*"
-    className="w-full mt-1 p-2 border rounded"
-    onChange={(e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
-        
-        // ✅ Update the state instantly with preview
-        setSelectedEditProduct((prev) => ({
-          ...prev,
-          photo: file, // Store file for upload
-          previewUrl,  // Temporary preview
-        }));
-      }
-    }}
-  />
-</Label>
-
-{/* Live Preview of Selected Image */}
-{selectedEditProduct?.previewUrl ? (
-  <img
-    src={selectedEditProduct.previewUrl}
-    alt="Preview"
-    className="w-32 h-32 mt-2 object-cover rounded-md border"
-  />
-) : selectedEditProduct?.photo ? (
-  <img
-    src={`http://localhost:5000/uploads/${selectedEditProduct.photo}`}
-    alt="Preview"
-    className="w-32 h-32 mt-2 object-cover rounded-md border"
-  />
-) : (
-  <p className="text-sm text-gray-500 mt-1">No image selected</p>
-)}
-
+          <Label>
+            <span>Upload Image</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full mt-1 p-2 border rounded"
+              onChange={(e) => handleEditChange(e)} // Handle image change
+            />
+          </Label>
         </div>
 
       </div>
     )}
   </ModalBody>
-  
   <ModalFooter>
-    <Button layout="outline" onClick={() => setIsEditModalOpen(false)}>
-      Cancel
+    <Button
+      onClick={() => {
+        if (selectedEditProduct) {
+          saveProductChanges(selectedEditProduct._id, selectedEditProduct);
+        }
+      }}
+      icon={EditIcon}
+      aria-label="Save changes"
+    >
+      Save Changes
     </Button>
-    <Button onClick={() => saveProductChanges(selectedEditProduct._id, selectedEditProduct)}>
-      Update
+    <Button
+      onClick={() => setIsEditModalOpen(false)}
+      aria-label="Cancel"
+    >
+      Cancel
     </Button>
   </ModalFooter>
 </Modal>
@@ -551,85 +563,104 @@ if (loading) {
         </>
       ) : (
         <>
-          {/* Car list */}
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
-            {data.map((product) => (
-              <div className="" key={product.id}>
-                <Card>
-                <img
-  className="object-cover w-full"
-  src={product.photo ? product.photo : "../icons/megaphone.png"}
-  alt="Image is loading"
-/>
+     {/* Car list */}
+<div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
+  {data.map((product) => {
+    const hasDiscount = product.discount && product.discount > 0;
+    const discountAmount = hasDiscount ? (product.price * product.discount) / 100 : 0;
+    const finalPrice = product.price - discountAmount;
 
+    // Function to format price properly (removes trailing .0)
+    const formatPrice = (price) => parseFloat(price.toFixed(2)).toString();
 
+    return (
+      <div className="" key={product.id}>
+        <Card>
+          <img
+            className="object-cover w-full"
+            src={product.photo ? product.photo : "../icons/megaphone.png"}
+            alt="Image is loading"
+          />
 
+          <CardBody>
+            {/* Product Name */}
+            <p className="font-semibold truncate text-gray-600 dark:text-gray-300 mb-1">
+              {product.name}
+            </p>
 
+            {/* Pricing Section */}
+            <div className="flex items-center space-x-2 mb-2">
+              {/* Display Final Price */}
+              <p className="text-purple-500 font-bold text-lg">
+                ${formatPrice(finalPrice)}
+              </p>
 
-                  <CardBody>
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="font-semibold truncate  text-gray-600 dark:text-gray-300">
-                        {product.name}
-                      </p>
-                      <Badge type={product.stockQuantity > 0 ? "success" : "danger"}>
-  {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
-</Badge>
+              {/* Show Original Price and Discount Percentage only if discount applies */}
+              {hasDiscount && (
+                <>
+                  <p className="text-gray-500 line-through text-sm">
+                    ${formatPrice(product.price)}
+                  </p>
+                  <p className="text-green-500 text-sm">{product.discount}% OFF</p>
+                </>
+              )}
+            </div>
 
+            {/* Stock Status */}
+            <Badge type={product.stockQuantity > 0 ? "success" : "danger"}>
+              {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
+            </Badge>
 
+            {/* Description */}
+            <p className="mb-8 text-gray-600 dark:text-gray-400">
+              {product.shortDescription}
+            </p>
 
-                    </div>
-
-                    <p className="mb-2 text-purple-500 font-bold text-lg">
-                      {product.price}
-                    </p>
-
-                    <p className="mb-8 text-gray-600 dark:text-gray-400">
-                      {product.shortDescription}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                      <Link 
-  to={{
-    pathname: `/app/product/${product._id}`, 
-    state: { product } // Passing full product data, including stockQuantity
-  }}
->
-  <Button
-    icon={EyeIcon}
-    className="mr-3"
-    aria-label="Preview"
-    size="small"
-  />
-</Link>
-
-
-                      </div>
-                      <div>
-                      <Button
-  icon={EditIcon}
-  className="mr-3"
-  layout="outline"
-  aria-label="Edit"
-  onClick={() => openEditModal(product)}
-  size="small"
-/>
-
-<Button icon={TrashIcon} layout="outline" onClick={() => {
-  if (product && product._id) {
-    openModal(product._id);
-  } else {
-    console.error("Product ID is undefined or product is missing!");
-  }
-}} />
-
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <Link
+                  to={{
+                    pathname: `/app/product/${product._id}`,
+                    state: { product },
+                  }}
+                >
+                  <Button
+                    icon={EyeIcon}
+                    className="mr-3"
+                    aria-label="Preview"
+                    size="small"
+                  />
+                </Link>
               </div>
-            ))}
-          </div>
+              <div>
+                <Button
+                  icon={EditIcon}
+                  className="mr-3"
+                  layout="outline"
+                  aria-label="Edit"
+                  onClick={() => openEditModal(product)}
+                  size="small"
+                />
+                <Button
+                  icon={TrashIcon}
+                  layout="outline"
+                  onClick={() => {
+                    if (product && product._id) {
+                      openModal(product._id);
+                    } else {
+                      console.error("Product ID is undefined or product is missing!");
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  })}
+</div>
+
 
           <Pagination
             totalResults={totalResults}

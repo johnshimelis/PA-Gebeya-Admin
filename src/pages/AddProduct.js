@@ -12,6 +12,7 @@ import {
   Button,
   Select,
 } from "@windmill/react-ui";
+import ReactSwitch from "react-switch"; // For the toggle button
 
 const FormTitle = ({ children }) => (
   <h2 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -29,7 +30,9 @@ const AddProduct = () => {
     category: "",
     stockQuantity: "",
     image: null, // Image will be stored as file
+    discount: "", // New discount field
   });
+  const [isDiscountEnabled, setIsDiscountEnabled] = useState(false); // State for toggle button
 
   useEffect(() => {
     fetchCategories();
@@ -66,13 +69,22 @@ const AddProduct = () => {
     if (product.image) {
       formData.append("image", product.image); // Append image file if exists
     }
-
+  
+    // Check if discount is enabled
+    if (isDiscountEnabled) {
+      formData.append("discount", product.discount); // Append discount percentage
+      formData.append("hasDiscount", true); // Set hasDiscount to true
+    } else {
+      formData.append("discount", 0); // Ensure discount is 0 if not enabled
+      formData.append("hasDiscount", false); // Set hasDiscount to false
+    }
+  
     try {
       const response = await fetch("http://localhost:5000/api/products/", {
         method: "POST",
         body: formData, // Send FormData with file
       });
-
+  
       if (response.ok) {
         alert("Product added successfully!");
         setProduct({
@@ -83,7 +95,9 @@ const AddProduct = () => {
           category: "",
           stockQuantity: "",
           image: null,
+          discount: "", // Reset discount field
         });
+        setIsDiscountEnabled(false); // Reset the discount toggle to false
       } else {
         alert("Error adding product.");
       }
@@ -91,6 +105,7 @@ const AddProduct = () => {
       console.error("Error:", error);
     }
   };
+  
 
   return (
     <div>
@@ -108,7 +123,7 @@ const AddProduct = () => {
         <p className="mx-2">Add new Product</p>
       </div>
 
-      <div className="w-full mt-8 grid gap-4 grid-col md:grid-cols-3 ">
+      <div className="w-full mt-8 grid gap-4 grid-col md:grid-cols-3">
         <Card className="row-span-2 md:col-span-2">
           <CardBody>
             <FormTitle>Product Name</FormTitle>
@@ -186,6 +201,31 @@ const AddProduct = () => {
                 onChange={handleChange}
               />
             </Label>
+
+            {/* Toggle to enable discount input */}
+            <FormTitle>Enable Discount</FormTitle>
+            <Label>
+              <ReactSwitch
+                checked={isDiscountEnabled}
+                onChange={() => setIsDiscountEnabled(!isDiscountEnabled)}
+              />
+            </Label>
+
+            {/* Discount input (conditionally rendered) */}
+            {isDiscountEnabled && (
+              <>
+                <FormTitle>Enter Discount</FormTitle>
+                <Label>
+                  <Input
+                    name="discount"
+                    type="number"
+                    value={product.discount}
+                    onChange={handleChange}
+                    placeholder="Enter discount percentage"
+                  />
+                </Label>
+              </>
+            )}
 
             <Button size="large" iconLeft={AddIcon} onClick={handleSubmit}>
               Add Product
