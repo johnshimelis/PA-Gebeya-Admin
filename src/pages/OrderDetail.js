@@ -17,26 +17,57 @@ const OrderDetail = ({ orders = [], setOrders = () => {} }) => {
   const handleSubmit = async () => {
     try {
       const response = await axios.put(`http://localhost:5000/api/orders/${order.id}`, { status });
-
+  
       if (response.status === 200) {
-        // Ensure `setOrders` updates the order's status
         const updatedOrders = orders.map((o) =>
           o.id === order.id ? { ...o, status } : o
         );
-
         setOrders(updatedOrders);
-
-        // Navigate back with updated state
+  
+        // ✅ If status is "Delivered", update product stock
+        if (status === "Delivered") {
+          await Promise.all(
+            order.orderDetails.map(async (item) => {
+              const productId = item.productId || item._id; // Ensure we have the correct product ID
+              const quantity = item.quantity; // The exact quantity of this product in the order
+  
+              console.log(`🔍 Updating product: ${productId}, Sold: ${quantity}`);
+  
+              if (!productId) {
+                console.error("❌ Error: productId is undefined for item:", item);
+                return;
+              }
+  
+              try {
+                // Get the current product data
+                const productResponse = await axios.get(`http://localhost:5000/api/products/${productId}`);
+                const product = productResponse.data;
+  
+                // ✅ Correct the sold and stockQuantity update
+                await axios.put(`http://localhost:5000/api/products/${productId}`, {
+                  sold: quantity, // ✅ Set sold to the exact quantity in the order
+                  stockQuantity: product.stockQuantity - quantity, // ✅ Subtract only the current sold amount
+                });
+  
+                console.log(`✅ Product ${productId} updated: Sold = ${quantity}, Stock = ${product.stockQuantity - quantity}`);
+              } catch (error) {
+                console.error(`❌ Error updating product ${productId}:`, error);
+              }
+            })
+          );
+        }
+  
         history.push({
           pathname: "/app/orders",
           state: { updatedOrders },
         });
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
+      console.error("❌ Error updating order status:", error);
     }
   };
-
+  
+  
   return (
     <div className="p-6 max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Order Details</h1>
@@ -44,7 +75,6 @@ const OrderDetail = ({ orders = [], setOrders = () => {} }) => {
       {/* Order Details & Payment Proof */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center">
-          {/* Display Avatar */}
           <img
             src={`http://localhost:5000${order.avatar}`} 
             alt="Client Avatar"
@@ -75,7 +105,6 @@ const OrderDetail = ({ orders = [], setOrders = () => {} }) => {
         {Array.isArray(order.orderDetails) ? (
           order.orderDetails.map((item, index) => (
             <Card key={index} className="p-4 border rounded-lg shadow-md bg-gray-50">
-              {/* Ensure productImage is correctly referenced */}
               {item.productImage ? (
                 <img 
                   src={`http://localhost:5000${item.productImage}`}  
