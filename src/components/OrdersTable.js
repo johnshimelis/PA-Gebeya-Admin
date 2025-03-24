@@ -13,7 +13,7 @@ import {
 import { useHistory, useLocation } from "react-router-dom";
 import axios from "axios";
 
-const OrdersTable = ({ resultsPerPage, filter }) => {
+const OrdersTable = ({ filter }) => {
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -22,13 +22,15 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
   const history = useHistory();
   const location = useLocation();
 
+  const resultsPerPage = 20; // Set pagination to 20 rows per page
+
   // Fetch orders from the backend
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/orders`);
+        const { data } = await axios.get(`https://pa-gebeya-backend.onrender.com/api/orders`);
         let filteredData = data;
 
         if (filter === "paid") {
@@ -39,9 +41,9 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
           filteredData = data.filter((order) => order.status === "Completed");
         }
 
-        setTotalResults(filteredData.length);
-        const paginatedData = filteredData.slice((page - 1) * resultsPerPage, page * resultsPerPage);
-        setOrders(paginatedData);
+        setTotalResults(filteredData.length); // Set total number of results
+        const paginatedData = filteredData.slice((page - 1) * resultsPerPage, page * resultsPerPage); // Paginate data
+        setOrders(paginatedData); // Set paginated orders
       } catch (error) {
         setError("Failed to fetch orders. Please try again.");
       }
@@ -49,7 +51,7 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
     };
 
     fetchOrders();
-  }, [page, resultsPerPage, filter]);
+  }, [page, filter]); // Re-fetch when page or filter changes
 
   // Update order if changed in another page
   useEffect(() => {
@@ -62,7 +64,7 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
     }
   }, [location.state]);
 
-  const onPageChange = (p) => setPage(p);
+  const onPageChange = (p) => setPage(p); // Handle page change
 
   return (
     <div className="overflow-x-auto">
@@ -104,15 +106,12 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
                     >
                       <TableCell>
                         <div className="flex items-center text-xs md:text-sm">
-                          {/* ✅ Fixed Avatar URL */}
-                          <Avatar 
-  className="hidden mr-2 md:block" 
-  src={order.avatar ? `http://localhost:5000${order.avatar}` : "/default-avatar.png"} 
-  alt="User Avatar" 
-  onError={(e) => { e.target.src = "/default-avatar.png"; }} // Fallback image
-/>
-
-
+                          <Avatar
+                            className="hidden mr-2 md:block"
+                            src={order.avatar ? `https://pa-gebeya-backend.onrender.com${order.avatar}` : "/default-avatar.png"}
+                            alt="User Avatar"
+                            onError={(e) => { e.target.src = "/default-avatar.png"; }} // Fallback image
+                          />
                           <div>
                             <p className="font-semibold">{order.name}</p>
                           </div>
@@ -130,7 +129,7 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
                       <TableCell className="hidden md:table-cell">
                         {order.paymentImage ? (
                           <img
-                            src={`http://localhost:5000${order.paymentImage}`} // ✅ Fixed URL
+                            src={`https://pa-gebeya-backend.onrender.com${order.paymentImage}`} // Fixed URL
                             alt="Payment"
                             className="w-10 h-10 object-cover rounded"
                           />
@@ -139,7 +138,7 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <span 
+                        <span
                           className={`px-3 py-1 rounded-lg text-white ${
                             order.status === "Pending" ? "bg-yellow-500" :
                             order.status === "Approved" || order.status === "Delivered" ? "bg-green-500" :
@@ -151,7 +150,6 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {/* ✅ Fixed Date Display */}
                         <span className="text-xs md:text-sm">
                           {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "N/A"}
                         </span>
@@ -169,10 +167,10 @@ const OrdersTable = ({ resultsPerPage, filter }) => {
             </Table>
             <TableFooter>
               <Pagination
-                totalResults={totalResults}
-                resultsPerPage={resultsPerPage}
+                totalResults={totalResults} // Total number of filtered results
+                resultsPerPage={resultsPerPage} // Results per page (20)
                 label="Table navigation"
-                onChange={onPageChange}
+                onChange={onPageChange} // Handle page change
               />
             </TableFooter>
           </>
