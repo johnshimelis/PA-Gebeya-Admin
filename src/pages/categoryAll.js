@@ -24,7 +24,7 @@ import {
 import Icon from "../components/Icon";
 import axios from "axios"; // Import Axios
 
-const API_BASE_URL = "http://localhost:5000/api/categories"; // Update API URL
+const API_BASE_URL = "https://pa-gebeya-backend.onrender.com/api/categories"; // Update API URL
 
 const CategoriesAll = () => {
   const [page, setPage] = useState(1);
@@ -170,16 +170,14 @@ const CategoriesAll = () => {
                 <TableCell>
                   {/* Ensure the image path is a full URL */}
                   {category.image ? (
-  <img
-    src={category.image}
-    alt={category.name}
-    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '5px' }}
-  />
-) : (
-  <p>No Image</p>
-)}
-
-
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '5px' }}
+                    />
+                  ) : (
+                    <p>No Image</p>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex">
@@ -247,11 +245,13 @@ const CategoriesAll = () => {
             <Input type="file" onChange={handleImageChange} />
           </Label>
           {imagePreview && (
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="mt-4 w-full h-auto rounded-lg"
-            />
+            <div className="mt-4 flex justify-center">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '5px' }}
+              />
+            </div>
           )}
         </ModalBody>
         <ModalFooter>

@@ -26,7 +26,7 @@ const AddCategory = () => {
     formData.append("image", imageFile); // Append image file
 
     try {
-      const response = await axios.post("http://localhost:5000/api/categories", formData, {
+      const response = await axios.post("https://pa-gebeya-backend.onrender.com/api/categories", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       alert(response.data.message);

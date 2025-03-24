@@ -20,7 +20,7 @@ const Ads = () => {
   const fetchData = async () => {
     const fetchAds = async (type, setter) => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/ads/${type}`);
+        const response = await axios.get(`https://pa-gebeya-backend.onrender.com/api/ads/${type}`);
         setter(response.data);
       } catch (error) {
         console.error(`Error fetching ${type}:`, error);
@@ -47,9 +47,9 @@ const Ads = () => {
     try {
       setLoading(true);
       if (editId) {
-        await axios.put(`http://localhost:5000/api/ads/${editId}`, formData);
+        await axios.put(`https://pa-gebeya-backend.onrender.com/api/ads/${editId}`, formData);
       } else {
-        await axios.post(`http://localhost:5000/api/ads/${type}`, formData);
+        await axios.post(`https://pa-gebeya-backend.onrender.com/api/ads/${type}`, formData);
       }
       alert(editId ? "Update successful!" : "Upload successful!");
       fetchData();
@@ -64,7 +64,7 @@ const Ads = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this ad?")) return;
-    await axios.delete(`http://localhost:5000/api/ads/${id}`);
+    await axios.delete(`https://pa-gebeya-backend.onrender.com/api/ads/${id}`);
     fetchData();
   };
 
@@ -106,7 +106,15 @@ const Ads = () => {
           <div className="grid grid-cols-3 gap-4">
             {data.map((item) => (
               <div key={item._id} className="border p-2">
-                <img src={`http://localhost:5000/${item.images[0]}`} alt="Ad" className="w-full h-40 object-cover" />
+                {/* Use the full URL directly from the database */}
+                {item.images.map((imageUrl, index) => (
+                  <img
+                    key={index}
+                    src={imageUrl}
+                    alt={`Ad ${index + 1}`}
+                    className="w-full h-40 object-cover"
+                  />
+                ))}
                 <div className="mt-2 flex justify-center gap-4">
                   <FaEdit className="text-blue-500 cursor-pointer" onClick={() => handleEditAd(item._id)} />
                   <FaTrash className="text-red-500 cursor-pointer" onClick={() => handleDelete(item._id)} />

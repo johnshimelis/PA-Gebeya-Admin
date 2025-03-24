@@ -29,8 +29,10 @@ const AddProduct = () => {
     fullDescription: "",
     category: "",
     stockQuantity: "",
-    image: null, // Image will be stored as file
+    images: [], // Array to store multiple images
     discount: "", // New discount field
+    videoLink: "", // New field for video link
+    rating: "", // New field for star rating
   });
   const [isDiscountEnabled, setIsDiscountEnabled] = useState(false); // State for toggle button
 
@@ -40,7 +42,7 @@ const AddProduct = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/categories");
+      const response = await fetch("https://pa-gebeya-backend.onrender.com/api/categories");
       const data = await response.json();
       setCategories(data);
     } catch (error) {
@@ -49,8 +51,9 @@ const AddProduct = () => {
   };
 
   const handleChange = (e) => {
-    if (e.target.name === "image") {
-      setProduct({ ...product, image: e.target.files[0] }); // Handle file input
+    if (e.target.name === "images") {
+      // Handle multiple file uploads
+      setProduct({ ...product, images: Array.from(e.target.files) });
     } else {
       setProduct({ ...product, [e.target.name]: e.target.value });
     }
@@ -58,7 +61,7 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent form from reloading the page
-    
+
     const formData = new FormData();
     formData.append("name", product.name);
     formData.append("price", product.price);
@@ -66,10 +69,14 @@ const AddProduct = () => {
     formData.append("fullDescription", product.fullDescription);
     formData.append("category", product.category);
     formData.append("stockQuantity", product.stockQuantity);
-    if (product.image) {
-      formData.append("image", product.image); // Append image file if exists
-    }
-  
+    formData.append("videoLink", product.videoLink); // Append video link
+    formData.append("rating", product.rating); // Append star rating
+
+    // Append multiple images
+    product.images.forEach((image) => {
+      formData.append("images", image);
+    });
+
     // Check if discount is enabled
     if (isDiscountEnabled) {
       formData.append("discount", product.discount); // Append discount percentage
@@ -78,13 +85,13 @@ const AddProduct = () => {
       formData.append("discount", 0); // Ensure discount is 0 if not enabled
       formData.append("hasDiscount", false); // Set hasDiscount to false
     }
-  
+
     try {
-      const response = await fetch("http://localhost:5000/api/products/", {
+      const response = await fetch("https://pa-gebeya-backend.onrender.com/api/products/", {
         method: "POST",
-        body: formData, // Send FormData with file
+        body: formData, // Send FormData with files and fields
       });
-  
+
       if (response.ok) {
         alert("Product added successfully!");
         setProduct({
@@ -94,8 +101,10 @@ const AddProduct = () => {
           fullDescription: "",
           category: "",
           stockQuantity: "",
-          image: null,
+          images: [], // Reset images array
           discount: "", // Reset discount field
+          videoLink: "", // Reset video link
+          rating: "", // Reset rating
         });
         setIsDiscountEnabled(false); // Reset the discount toggle to false
       } else {
@@ -105,7 +114,6 @@ const AddProduct = () => {
       console.error("Error:", error);
     }
   };
-  
 
   return (
     <div>
@@ -193,12 +201,37 @@ const AddProduct = () => {
               />
             </Label>
 
-            <FormTitle>Product Image</FormTitle>
+            <FormTitle>Product Images</FormTitle>
             <Label>
               <Input
-                name="image"
+                name="images"
                 type="file"
                 onChange={handleChange}
+                multiple // Allow multiple file uploads
+              />
+            </Label>
+
+            <FormTitle>Video Link</FormTitle>
+            <Label>
+              <Input
+                name="videoLink"
+                value={product.videoLink}
+                onChange={handleChange}
+                placeholder="Enter video link (e.g., YouTube URL)"
+              />
+            </Label>
+
+            <FormTitle>Rating</FormTitle>
+            <Label>
+              <Input
+                name="rating"
+                type="number"
+                value={product.rating}
+                onChange={handleChange}
+                placeholder="Enter star rating (0-5)"
+                min="0"
+                max="5"
+                step="0.1"
               />
             </Label>
 
