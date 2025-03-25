@@ -35,6 +35,7 @@ import Icon from "../components/Icon";
 import { genRating } from "../utils/genarateRating";
 import "react-responsive-carousel/lib/styles/carousel.min.css"; // Import carousel styles
 import { Carousel } from "react-responsive-carousel"; // Import Carousel component
+const S3_BASE_URL = "https://pa-gebeya-upload.s3.eu-north-1.amazonaws.com/";
 
 // Function to generate yellow stars based on rating
 const renderRatingStars = (rating) => {
@@ -506,21 +507,28 @@ const ProductsAll = () => {
                   .slice((page - 1) * resultsPerPage, page * resultsPerPage)
                   .map((product) => (
                     <TableRow key={product._id}>
-                      <TableCell>
-                        <Carousel showThumbs={false} showStatus={false} dynamicHeight>
-                          {product.images && product.images.length > 0 ? (
-                            product.images.map((image, index) => (
-                              <div key={index}>
-                                <img src={image} alt={`Product ${index}`} />
-                              </div>
-                            ))
-                          ) : (
-                            <div>
-                              <img src="../icons/megaphone.png" alt="Placeholder" />
-                            </div>
-                          )}
-                        </Carousel>
-                      </TableCell>
+                   <TableCell>
+  <Carousel showThumbs={false} showStatus={false} dynamicHeight>
+    {product.images && product.images.length > 0 ? (
+      product.images.map((image, index) => (
+        <div key={index}>
+          <img 
+            src={`${S3_BASE_URL}${image}`} 
+            alt={`Product ${index}`} 
+            onError={(e) => {
+              e.target.onerror = null; 
+              e.target.src = "../icons/megaphone.png";
+            }}
+          />
+        </div>
+      ))
+    ) : (
+      <div>
+        <img src="../icons/megaphone.png" alt="Placeholder" />
+      </div>
+    )}
+  </Carousel>
+</TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>${product.price}</TableCell>
                       <TableCell>{product.stockQuantity}</TableCell>
@@ -601,18 +609,25 @@ const ProductsAll = () => {
                         </div>
                       )}
                       <Carousel showThumbs={false} showStatus={false} dynamicHeight>
-                        {product.images && product.images.length > 0 ? (
-                          product.images.map((image, index) => (
-                            <div key={index}>
-                              <img src={image} alt={`Product ${index}`} />
-                            </div>
-                          ))
-                        ) : (
-                          <div>
-                            <img src="../icons/megaphone.png" alt="Placeholder" />
-                          </div>
-                        )}
-                      </Carousel>
+  {product.images && product.images.length > 0 ? (
+    product.images.map((image, index) => (
+      <div key={index}>
+        <img 
+          src={`${S3_BASE_URL}${image}`} 
+          alt={`Product ${index}`}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "../icons/megaphone.png";
+          }}
+        />
+      </div>
+    ))
+  ) : (
+    <div>
+      <img src="../icons/megaphone.png" alt="Placeholder" />
+    </div>
+  )}
+</Carousel>
                       <CardBody>
                         <p className="font-semibold truncate text-gray-600 dark:text-gray-300 mb-1">
                           {product.name}

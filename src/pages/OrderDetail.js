@@ -16,44 +16,17 @@ const OrderDetail = ({ orders = [], setOrders = () => {} }) => {
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.put(`https://pa-gebeya-backend.onrender.com/api/orders/${order.id}`, { status });
-
+      const response = await axios.put(
+        `https://pa-gebeya-backend.onrender.com/api/orders/${order.id}`, 
+        { status }
+      );
+  
       if (response.status === 200) {
         const updatedOrders = orders.map((o) =>
           o.id === order.id ? { ...o, status } : o
         );
         setOrders(updatedOrders);
-
-        if (status === "Delivered") {
-          await Promise.all(
-            order.orderDetails.map(async (item) => {
-              const productId = item.productId || item._id;
-              const quantity = item.quantity;
-
-              console.log(`🔍 Updating product: ${productId}, Sold: ${quantity}`);
-
-              if (!productId) {
-                console.error("❌ Error: productId is undefined for item:", item);
-                return;
-              }
-
-              try {
-                const productResponse = await axios.get(`https://pa-gebeya-backend.onrender.com/api/products/${productId}`);
-                const product = productResponse.data;
-
-                await axios.put(`https://pa-gebeya-backend.onrender.com/api/products/${productId}`, {
-                  sold: quantity,
-                  stockQuantity: product.stockQuantity - quantity,
-                });
-
-                console.log(`✅ Product ${productId} updated: Sold = ${quantity}, Stock = ${product.stockQuantity - quantity}`);
-              } catch (error) {
-                console.error(`❌ Error updating product ${productId}:`, error);
-              }
-            })
-          );
-        }
-
+        
         history.push({
           pathname: "/app/orders",
           state: { updatedOrders },
@@ -63,7 +36,6 @@ const OrderDetail = ({ orders = [], setOrders = () => {} }) => {
       console.error("❌ Error updating order status:", error);
     }
   };
-
   return (
     <div className="p-6 max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Order Details</h1>
